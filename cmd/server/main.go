@@ -86,8 +86,13 @@ func refreshDashboard(s *scanner.Scanner) {
 		
 		// Truncate timestamp for brevity
 		seen := d.LastSeen.Format("15:04:05")
+
+		mac := d.MAC
+		if mac == "" {
+			mac = "N/A"
+		}
 		
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", status, d.IP, d.MAC, d.Hostname, seen)
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", status, d.IP, mac, d.Hostname, seen)
 	}
 	w.Flush()
 }

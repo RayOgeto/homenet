@@ -5,6 +5,7 @@ import (
 	"homenet/internal/models"
 	"net"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -67,6 +68,10 @@ func (s *Scanner) scan() {
 // updateARP reads /proc/net/arp to enrich devices with MAC addresses.
 // This works on Linux.
 func (s *Scanner) updateARP() {
+	if runtime.GOOS != "linux" {
+		return
+	}
+
 	// Simple parsing of /proc/net/arp
 	// Format: IP address       HW type     Flags       HW address            Mask     Device
 	//         192.168.1.1      0x1         0x2         00:11:22:33:44:55     *        eth0

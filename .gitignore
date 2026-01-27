@@ -1,0 +1,15 @@
+# Binaries
+homenet
+*.exe
+*.dll
+*.so
+*.dylib
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# IDEs
+.idea/
+.vscode/
+*.swp
