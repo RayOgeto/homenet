@@ -22,10 +22,7 @@ A modular, CLI-based Go application for home network management and monitoring.
 ## Installation
 
 1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/yourusername/homenet.git
-    cd homenet
-    ```
+   
 
 2.  **Build the project:**
     ```bash
