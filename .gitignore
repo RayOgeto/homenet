@@ -5,6 +5,12 @@ homenet
 *.so
 *.dylib
 
+# Runtime Data (Do not commit these)
+config.json
+devices.json
+devices.json.tmp
+homenet.log
+
 # OS specific
 .DS_Store
 Thumbs.db
