@@ -94,5 +94,7 @@ Since this tool has a visual dashboard, the best way to run it permanently on a 
     *   **Fix:** Disable the system stub listener or use a different port in `config.json` (though standard devices only talk to port 53).
     *   *Quick Fix to free port:* `sudo systemctl stop systemd-resolved`
 
-*   **No MAC Addresses**:
-    *   MAC detection relies on the Linux ARP table (`/proc/net/arp`). It works best on Linux. Windows/macOS will detect IPs/Hostnames but might miss MACs.
+## Requirements
+*   **OS:** Linux, Windows, or macOS.
+    *   *Note:* MAC address detection is currently limited to Linux.
+*   **Go:** Version 1.22 or higher.
