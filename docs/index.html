@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Network Sentinel - Documentation</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --sidebar-bg: #1e293b;
+            --text-color: #e2e8f0;
+            --accent-color: #8b5cf6; /* Violet */
+            --code-bg: #334155;
+            --border-color: #334155;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar */
+        aside {
+            width: 280px;
+            background-color: var(--sidebar-bg);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border-color);
+            overflow-y: auto;
+            position: fixed;
+            height: 100%;
+        }
+
+        aside h1 {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        aside nav a {
+            color: #94a3b8;
+            text-decoration: none;
+            display: block;
+            padding: 0.5rem 0;
+            transition: color 0.2s;
+            font-size: 0.95rem;
+        }
+
+        aside nav a:hover, aside nav a.active {
+            color: #fff;
+            font-weight: 500;
+        }
+
+        /* Main Content */
+        main {
+            flex: 1;
+            padding: 4rem 6rem;
+            margin-left: 280px; /* Width of sidebar */
+            overflow-y: auto;
+            max-width: 900px;
+        }
+
+        h1, h2, h3 { color: #fff; }
+        h1 { font-size: 2.5rem; margin-bottom: 1rem; border-bottom: 2px solid var(--border-color); padding-bottom: 1rem; }
+        h2 { font-size: 1.8rem; margin-top: 3rem; margin-bottom: 1rem; color: var(--accent-color); }
+        h3 { font-size: 1.4rem; margin-top: 2rem; }
+        
+        p, li { line-height: 1.7; color: #cbd5e1; }
+        ul { padding-left: 1.5rem; }
+        li { margin-bottom: 0.5rem; }
+
+        /* Code Blocks */
+        pre {
+            background-color: var(--code-bg);
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+        }
+        code {
+            font-family: 'Courier New', Courier, monospace;
+            color: #e2e8f0;
+        }
+        p code, li code {
+            background-color: var(--code-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.9em;
+            color: #a5b4fc;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body { flex-direction: column; height: auto; }
+            aside { position: relative; width: 100%; height: auto; padding: 1rem; box-sizing: border-box; }
+            main { margin-left: 0; padding: 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+<aside>
+    <h1>Home Network<br>Sentinel</h1>
+    <nav>
+        <a href="#overview">Project Overview</a>
+        <a href="#architecture">How It Works</a>
+        <a href="#installation">Installation</a>
+        <a href="#configuration">Configuration</a>
+        <a href="#usage">Usage Guide</a>
+        <a href="#troubleshooting">Troubleshooting</a>
+    </nav>
+</aside>
+
+<main>
+    <section id="overview">
+        <h1>Home Network Sentinel</h1>
+        <p>A modular, CLI-based Go application for home network management and monitoring. Monitor your local network, identify connected devices, and block unwanted ads and trackers at the DNS level—all from a beautiful terminal interface.</p>
+        
+        <h3>Key Capabilities</h3>
+        <ul>
+            <li><strong>👁️ Visibility:</strong> See every device connected to your network (Phones, IoT, Laptops).</li>
+            <li><strong>🛡️ Privacy:</strong> Acts as a local DNS sinkhole to block ads before they reach your devices.</li>
+            <li><strong>⚡ Control:</strong> Wake up sleeping devices remotely via Wake-on-LAN (WoL).</li>
+            <li><strong>📊 Insights:</strong> Real-time statistics on DNS queries and network changes.</li>
+        </ul>
+    </section>
+
+    <section id="architecture">
+        <h2>How It Works</h2>
+        <p>The application runs three parallel subsystems to provide a seamless experience:</p>
+        
+        <h3>1. The Watchdog (Scanner)</h3>
+        <p>Periodically scans your subnet (<code>192.168.x.x</code>) to find active devices. It uses ARP table lookups (Linux) to identify manufacturers and saves history to <code>devices.json</code>.</p>
+
+        <h3>2. The Gatekeeper (DNS Server)</h3>
+        <p>Listens on Port 53. When a device requests a domain, it checks a local blocklist. If the domain is an ad/tracker, it returns <code>NXDOMAIN</code> (Blocked). Otherwise, it forwards the request to Cloudflare (1.1.1.1).</p>
+
+        <h3>3. The Command Center (UI)</h3>
+        <p>A Terminal User Interface (TUI) built with Bubble Tea that visualizes all data in real-time.</p>
+    </section>
+
+    <section id="installation">
+        <h2>Installation</h2>
+        <p>Follow these steps to get running on Linux (recommended), macOS, or Windows.</p>
+
+        <h3>1. Clone & Build</h3>
+        <pre><code>git clone https://github.com/yourusername/homenet.git
+cd homenet
+go build -o homenet cmd/server/main.go</code></pre>
+
+        <h3>2. Run (First Time)</h3>
+        <p>We use <code>sudo</code> because the DNS server needs to bind to port 53.</p>
+        <pre><code>sudo ./homenet</code></pre>
+    </section>
+
+    <section id="configuration">
+        <h2>Configuration</h2>
+        <p>On the first run, a <code>config.json</code> file is generated. You can edit this file to customize the tool.</p>
+        
+        <pre><code>{
+  "subnet": "",                 // Empty = Auto-detect
+  "upstream_dns": "1.1.1.1:53", // Real DNS server
+  "dns_port": "53",             // Listening port
+  "block_list": [
+    "ads.google.com.",
+    "facebook.com."
+  ],
+  "log_file": "homenet.log",
+  "devices_file": "devices.json"
+}</code></pre>
+    </section>
+
+    <section id="usage">
+        <h2>Usage Guide</h2>
+        
+        <h3>Blocking Ads (Network-Wide)</h3>
+        <p>To use this tool as your network ad-blocker:</p>
+        <ol>
+            <li>Run the tool on a server with a static IP (e.g., <code>192.168.1.50</code>).</li>
+            <li>Go to your <strong>Router's DHCP Settings</strong>.</li>
+            <li>Set the <strong>Primary DNS</strong> to your server's IP (<code>192.168.1.50</code>).</li>
+            <li>Save and reboot your router.</li>
+        </ol>
+
+        <h3>Wake-on-LAN</h3>
+        <p>Wake up a sleeping device by its MAC address:</p>
+        <pre><code>./homenet -wake aa:bb:cc:dd:ee:ff</code></pre>
+
+        <h3>Deployment (24/7)</h3>
+        <p>Since this tool has a UI, use <code>tmux</code> to keep it running in the background on headless servers.</p>
+        <pre><code># Start session
+tmux new -s homenet
+
+# Run tool
+sudo ./homenet
+
+# Detach (Ctrl+B, then D)
+# Reattach later:
+tmux attach -t homenet</code></pre>
+    </section>
+
+    <section id="troubleshooting">
+        <h2>Troubleshooting</h2>
+        <h3>bind: address already in use</h3>
+        <p>This usually means <code>systemd-resolved</code> is using port 53. To fix it on Ubuntu:</p>
+        <pre><code>sudo systemctl stop systemd-resolved</code></pre>
+        
+        <h3>No MAC Addresses?</h3>
+        <p>MAC address detection relies on the Linux ARP table. If you are on Windows or macOS, you might only see IP addresses and Hostnames.</p>
+    </section>
+</main>
+
+</body>
+</html>

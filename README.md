@@ -1,61 +1,98 @@
 # Home Network Sentinel
 
-A modular, CLI-based Go application for home network management and monitoring.
+A modular, CLI-based Go application for home network management and monitoring. It combines a real-time device scanner with a local DNS gatekeeper to block ads and track network activity.
 
 ## Features
 
-*   **Watchdog (Scanner):**
-    *   Automatically discovers devices on your local subnet (default: `192.168.100.x`).
-    *   Detects IP addresses and Hostnames.
-    *   **MAC Address Detection:** Linux only (via ARP table).
-    *   Monitors online/offline status in real-time.
-*   **Gatekeeper (DNS Server):**
-    *   Acts as a local DNS forwarder.
-    *   Blocks ads and trackers using a built-in blocklist (e.g., `ads.google.com`).
-    *   *Note: Requires root privileges to bind to port 53.*
-*   **Command Center (Dashboard):**
-    *   Clean, terminal-based user interface (TUI).
-    *   Auto-refreshes every 2 seconds.
-*   **Wake-on-LAN (WoL):**
-    *   Remotely wake up devices by sending Magic Packets to their MAC address.
+*   **🕵️ Watchdog (Scanner):**
+    *   **Auto-Discovery:** Automatically detects devices on your local subnet.
+    *   **Persistence:** "Remembers" devices even after restarts (`devices.json`).
+    *   **Details:** Detects IP, Hostnames, Manufacturers (via MAC OUI), and Open Ports.
+    *   **Status:** Monitors online/offline status in real-time.
+*   **🛡️ Gatekeeper (DNS Server):**
+    *   **Ad Blocking:** Blocks ads and trackers using a configurable blocklist.
+    *   **Privacy:** Logs queries locally to `homenet.log` (you own your data).
+    *   **Stats:** Real-time dashboard counter for total queries and blocked domains.
+*   **🖥️ Command Center (TUI):**
+    *   Beautiful terminal-based dashboard (built with Bubble Tea).
+    *   Live updates every 2 seconds.
+*   **⚡ Wake-on-LAN (WoL):**
+    *   Remotely wake up devices using their MAC address.
 
 ## Installation
 
-1.  **Clone the repository:**
-   
+### Prerequisites
+*   **OS:** Linux (Recommended for full feature set like MAC detection), Windows, or macOS.
+*   **Go:** Version 1.22 or higher.
 
-2.  **Build the project:**
-    ```bash
-    go build -o homenet cmd/server/main.go
-    ```
-
-3.  **(Optional) Install system-wide:**
-    ```bash
-    sudo mv homenet /usr/local/bin/
-    ```
+### 1. Clone & Build
+```bash
+git clone https://github.com/yourusername/homenet.git
+cd homenet
+go build -o homenet cmd/server/main.go
+```
 
 ## Usage
 
-### 1. Monitor Mode (Dashboard + DNS)
-Run the application with `sudo` to enable the DNS server (port 53) and ARP table reading.
+### 1. First Run (Initialization)
+Run the application with `sudo` to allow it to bind to port 53 (standard DNS port).
 
 ```bash
 sudo ./homenet
 ```
-*   Displays a list of connected devices.
-*   Starts the DNS server on port 53.
 
-### 2. Wake-on-LAN
-Wake a specific device using its MAC address.
+*   **First Start:** It will automatically create a default `config.json` file.
+*   **Dashboard:** You will see the device list and DNS stats.
+*   **Logs:** Logs are written to `homenet.log`.
+
+### 2. Configuration (`config.json`)
+After the first run, you can edit `config.json` to customize the tool:
+
+```json
+{
+  "subnet": "",                   // Empty = Auto-detect (e.g., "192.168.1")
+  "upstream_dns": "1.1.1.1:53",   // Forward clean traffic here
+  "dns_port": "53",               // Port to listen on (53 is standard)
+  "block_list": [                 // Add your own domains to block
+    "ads.google.com.",
+    "facebook.com."
+  ],
+  "log_file": "homenet.log",
+  "devices_file": "devices.json"
+}
+```
+
+### 3. Using as a DNS Blocker
+To block ads on your network:
+
+1.  **Find your Server IP:** Run `hostname -I` (e.g., `192.168.1.50`).
+2.  **Point your Devices:**
+    *   **Single Device:** Go to WiFi Settings -> DNS -> Manual -> Enter `192.168.1.50`.
+    *   **Whole Network:** Go to your Router's DHCP settings -> Primary DNS -> Enter `192.168.1.50`.
+
+### 4. Wake-on-LAN
+Wake a specific device using its MAC address (no root required for this command):
 
 ```bash
 ./homenet -wake aa:bb:cc:dd:ee:ff
 ```
 
-## Configuration
-*   **Subnet:** Currently hardcoded to `192.168.100.x` in `cmd/server/main.go`. Change this to match your local network if different.
-*   **Upstream DNS:** Defaults to Cloudflare (`1.1.1.1`).
-*   **Blocklist:** Defined in `internal/dns/server.go`.
+## Deployment (24/7 Operation)
+
+Since this tool has a visual dashboard, the best way to run it permanently on a server or Raspberry Pi is using a terminal multiplexer like `tmux`.
+
+1.  **Install tmux:** `sudo apt install tmux`
+2.  **Start Session:** `tmux new -s homenet`
+3.  **Run Tool:** `sudo ./homenet`
+4.  **Detach:** Press `Ctrl+B`, then `D`. (The tool keeps running in background).
+5.  **Reattach:** `tmux attach -t homenet` to view the dashboard/stats.
+
+## Troubleshooting
+
+*   **"bind: address already in use"**:
+    *   On Ubuntu/Debian, `systemd-resolved` often hogs port 53.
+    *   **Fix:** Disable the system stub listener or use a different port in `config.json` (though standard devices only talk to port 53).
+    *   *Quick Fix to free port:* `sudo systemctl stop systemd-resolved`
 
 ## Requirements
 *   **OS:** Linux, Windows, or macOS.
