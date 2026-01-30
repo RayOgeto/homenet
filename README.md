@@ -4,19 +4,19 @@ A modular, CLI-based Go application for home network management and monitoring. 
 
 ## Features
 
-*   **🕵️ Watchdog (Scanner):**
+*   **Watchdog (Scanner):**
     *   **Auto-Discovery:** Automatically detects devices on your local subnet.
     *   **Persistence:** "Remembers" devices even after restarts (`devices.json`).
     *   **Details:** Detects IP, Hostnames, Manufacturers (via MAC OUI), and Open Ports.
     *   **Status:** Monitors online/offline status in real-time.
-*   **🛡️ Gatekeeper (DNS Server):**
+*   ** Gatekeeper (DNS Server):**
     *   **Ad Blocking:** Blocks ads and trackers using a configurable blocklist.
     *   **Privacy:** Logs queries locally to `homenet.log` (you own your data).
     *   **Stats:** Real-time dashboard counter for total queries and blocked domains.
-*   **🖥️ Command Center (TUI):**
+*   ** Command Center (TUI):**
     *   Beautiful terminal-based dashboard (built with Bubble Tea).
     *   Live updates every 2 seconds.
-*   **⚡ Wake-on-LAN (WoL):**
+*   ** Wake-on-LAN (WoL):**
     *   Remotely wake up devices using their MAC address.
 
 ## Installation
@@ -27,7 +27,7 @@ A modular, CLI-based Go application for home network management and monitoring. 
 
 ### 1. Clone & Build
 ```bash
-git clone https://github.com/yourusername/homenet.git
+git clone https://github.com/RayOgeto/homenet.git
 cd homenet
 go build -o homenet cmd/server/main.go
 ```
