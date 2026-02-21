@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/spinner"
@@ -50,6 +51,10 @@ type model struct {
 	scanning  bool
 	subTitle  string
 	alert     string
+	// Interaction
+	showDetails    bool
+	selectedDevice *models.Device
+	
 	// Stats
 	totalQueries   uint64
 	blockedQueries uint64
@@ -80,6 +85,24 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Save on exit
 			m.scanner.SaveDevices()
 			return m, tea.Quit
+		case "enter":
+			if !m.showDetails {
+				// Select device
+				selectedRow := m.table.Cursor()
+				if selectedRow >= 0 && selectedRow < len(m.devices) {
+					// We need to match the sorted table row to the device list
+					// The table rows are rebuilt every scan, but the model has m.devices
+					// But m.devices is ALSO sorted in updateTable!
+					// Let's assume m.devices matches the table rows for now (it should if we sort consistently)
+					m.selectedDevice = &m.devices[selectedRow]
+					m.showDetails = true
+				}
+			}
+		case "esc":
+			if m.showDetails {
+				m.showDetails = false
+				m.selectedDevice = nil
+			}
 		}
 	
 	case tickMsg:
@@ -116,6 +139,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View renders the UI
 func (m model) View() string {
+	if m.showDetails && m.selectedDevice != nil {
+		return m.viewDetails()
+	}
+
 	title := `
    _____  ______  _   _  _______  _____  _   _  ______  _
   / ____||  ____|| \ | ||__   __||_   _|| \ | ||  ____|| |
@@ -130,8 +157,12 @@ func (m model) View() string {
 	)
 	
 	// Stats Line
-	stats := fmt.Sprintf("\n %s Scanning... | Devices: %d | DNS Queries: %d | Blocked: %d", 
-		m.spinner.View(), len(m.devices), m.totalQueries, m.blockedQueries)
+	mode := "UDP"
+	if m.dnsServer != nil {
+		mode = strings.ToUpper(m.dnsServer.Mode)
+	}
+	stats := fmt.Sprintf("\n %s Scanning... | Devices: %d | DNS: %d (%s) | Blocked: %d", 
+		m.spinner.View(), len(m.devices), m.totalQueries, mode, m.blockedQueries)
 	
 	// Alert Banner
 	if m.alert != "" {
@@ -143,12 +174,73 @@ func (m model) View() string {
 			Render(" ⚠️  " + m.alert + "  ")
 		stats = lipgloss.JoinVertical(lipgloss.Left, stats, "\n"+alertBanner)
 	}
+	
+	// Help Line
+	help := lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("\n ↑/↓: Navigate • Enter: Details • q: Quit")
 
 	return lipgloss.JoinVertical(lipgloss.Left,
 		header,
 		baseStyle.Render(m.table.View()),
 		stats,
-		"\n Press 'q' to quit.",
+		help,
+	)
+}
+
+func (m model) viewDetails() string {
+	d := m.selectedDevice
+	if d == nil {
+		return "Error: No device selected"
+	}
+
+	title := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("#FAFAFA")).
+		Background(lipgloss.Color("#7D56F4")).
+		Padding(0, 1).
+		Render(fmt.Sprintf(" Device Details: %s ", d.IP))
+
+	status := "OFFLINE"
+	if d.IsOnline {
+		status = "ONLINE"
+	}
+	
+	ports := "None"
+	if len(d.Ports) > 0 {
+		ports = strings.Join(d.Ports, ", ")
+	}
+
+	content := fmt.Sprintf(`
+  Friendly Name: %s
+  Hostname:      %s
+  MAC Address:   %s
+  Manufacturer:  %s
+  Type:          %s
+  Status:        %s
+  Last Seen:     %s
+
+  Open Ports:    %s
+  mDNS Info:     %v
+`,
+		d.FriendlyName,
+		d.Hostname,
+		d.MAC,
+		d.Manufacturer,
+		d.DeviceType,
+		status,
+		d.LastSeen.Format(time.RFC822),
+		ports,
+		d.MDNSInfo,
+	)
+	
+	box := baseStyle.Padding(1).Render(content)
+	
+	help := lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("\n Esc: Back")
+
+	return lipgloss.JoinVertical(lipgloss.Center,
+		"\n",
+		title,
+		box,
+		help,
 	)
 }
 
@@ -315,7 +407,7 @@ func main() {
 	scanner.Start(5 * time.Second) // Background scan
 
 	// Start DNS Server
-	dnsServer := dns.NewServer(cfg.UpstreamDNS, cfg.BlockList)
+	dnsServer := dns.NewServer(cfg.UpstreamDNS, cfg.DNSMode, cfg.DoHProvider, cfg.BlockList)
 	go func() {
 		// Uses configured port
 		dnsServer.Start(cfg.DNSPort)

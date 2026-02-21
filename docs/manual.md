@@ -34,7 +34,7 @@ The application runs three parallel subsystems (Goroutines) that communicate to 
 *   **Role:** Discover and track devices.
 *   **Mechanism:**
     *   **Active Scanning:** Periodically attempts to connect to common ports (80, 443, 22) on every IP in the subnet.
-    *   **Passive Detection:** Reads the Linux ARP table (`/proc/net/arp`) to map IP addresses to MAC addresses.
+    *   **Passive Detection:** Reads the OS ARP table (via `/proc/net/arp` on Linux or `arp -a` on Windows) to map IP addresses to MAC addresses.
     *   **Persistence:** Saves the known state to `devices.json`, so you don't lose history when the app restarts.
 
 ### B. The Gatekeeper (DNS Server)
@@ -57,7 +57,7 @@ The application runs three parallel subsystems (Goroutines) that communicate to 
 ## 3. Installation Guide
 
 ### Prerequisites
-*   **Operating System:** Linux (Debian/Ubuntu/Raspberry Pi OS recommended for best feature support). Windows/macOS supported with limited functionality (no MAC detection).
+*   **Operating System:** Linux (Debian/Ubuntu/Raspberry Pi OS) or Windows. (Full feature set supported on both).
 *   **Go Compiler:** Go 1.22+.
 
 ### Building from Source
@@ -69,9 +69,8 @@ The application runs three parallel subsystems (Goroutines) that communicate to 
     ```
 
 2.  **Compile:**
-    ```bash
-    go build -o homenet cmd/server/main.go
-    ```
+    *   **Linux/macOS:** `go build -o homenet cmd/server/main.go`
+    *   **Windows:** `go build -o homenet.exe cmd/server/main.go`
 
 3.  **Verify:**
     ```bash
@@ -113,11 +112,20 @@ On the first run, the application creates a `config.json` file. You can edit thi
 ## 5. Usage Guide
 
 ### Mode A: Network Monitoring (Interactive)
-The default mode. Requires `sudo` to bind to port 53.
+The default mode. Requires administrative privileges to bind to port 53.
 
+#### 🐧 Linux
 ```bash
 sudo ./homenet
 ```
+
+#### 🪟 Windows
+1.  **Open as Admin:** Search for "PowerShell" or "Command Prompt", right-click, and select **"Run as Administrator"**.
+2.  **Navigate & Run:**
+    ```powershell
+    cd C:\path\to\homenet
+    .\homenet.exe
+    ```
 
 *   **View:** Shows the Dashboard.
 *   **Exit:** Press `q` or `Ctrl+C`.
@@ -154,15 +162,12 @@ Since this tool has a UI, use `tmux` to keep it running in the background.
 
 ### `bind: address already in use`
 *   **Cause:** Another service is using Port 53 (common on Ubuntu).
-*   **Fix:** Stop the system resolver.
-    ```bash
-    sudo systemctl stop systemd-resolved
-    ```
+*   **Fix:** Stop the system resolver on Linux (`sudo systemctl stop systemd-resolved`) or ensure no other DNS service is running on Windows.
     Or edit `config.json` to use port `5353` (but devices won't use it automatically).
 
 ### Devices show "N/A" for MAC Address
-*   **Cause:** You are running on Windows/macOS, or the app doesn't have permissions.
-*   **Fix:** Run on Linux with `sudo`.
+*   **Cause:** You are running on macOS, or the app doesn't have permissions to access the network state.
+*   **Fix:** Run on Linux with `sudo` or Windows as Administrator.
 
 ### "Permission Denied"
 *   **Cause:** Binding to ports below 1024 (like 53) requires root.

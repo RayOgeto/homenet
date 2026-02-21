@@ -22,7 +22,7 @@ A modular, CLI-based Go application for home network management and monitoring. 
 ## Installation
 
 ### Prerequisites
-*   **OS:** Linux (Recommended for full feature set like MAC detection), Windows, or macOS.
+*   **OS:** Linux, Windows, or macOS. (Full feature set supported on Linux and Windows).
 *   **Go:** Version 1.22 or higher.
 
 ### 1. Clone & Build
@@ -35,10 +35,19 @@ go build -o homenet cmd/server/main.go
 ## Usage
 
 ### 1. First Run (Initialization)
-Run the application with `sudo` to allow it to bind to port 53 (standard DNS port).
+Run the application with administrative privileges to allow it to bind to port 53 (standard DNS port).
 
+#### Linux
 ```bash
 sudo ./homenet
+```
+
+#### Windows
+1. Open **PowerShell** or **Command Prompt** as **Administrator**.
+2. Navigate to the project folder.
+3. Run the executable:
+```powershell
+.\homenet.exe
 ```
 
 *   **First Start:** It will automatically create a default `config.json` file.
