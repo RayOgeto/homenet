@@ -9,6 +9,8 @@ import (
 type Config struct {
 	Subnet       string   `json:"subnet"`             // e.g., "192.168.1" or empty for auto
 	UpstreamDNS  string   `json:"upstream_dns"`       // e.g., "1.1.1.1:53"
+	DNSMode      string   `json:"dns_mode"`           // "udp", "doh", "dot"
+	DoHProvider  string   `json:"doh_provider"`       // e.g., "https://cloudflare-dns.com/dns-query"
 	DNSPort      string   `json:"dns_port"`           // e.g., "53"
 	BlockList    []string `json:"block_list"`         // List of domains to block
 	LogFile      string   `json:"log_file"`           // Path to log file
@@ -20,6 +22,8 @@ func DefaultConfig() *Config {
 	return &Config{
 		Subnet:      "",
 		UpstreamDNS: "1.1.1.1:53",
+		DNSMode:     "udp",
+		DoHProvider: "https://cloudflare-dns.com/dns-query",
 		DNSPort:     "53",
 		BlockList: []string{
 			"ads.google.com.",
@@ -69,6 +73,8 @@ func LoadConfig(path string) (*Config, error) {
 	
 	// Fill in defaults for empty fields if needed (optional refinement)
 	if cfg.UpstreamDNS == "" { cfg.UpstreamDNS = "1.1.1.1:53" }
+	if cfg.DNSMode == "" { cfg.DNSMode = "udp" }
+	if cfg.DoHProvider == "" { cfg.DoHProvider = "https://cloudflare-dns.com/dns-query" }
 	if cfg.DNSPort == "" { cfg.DNSPort = "53" }
 	if cfg.LogFile == "" { cfg.LogFile = "homenet.log" }
 	if cfg.DevicesFile == "" { cfg.DevicesFile = "devices.json" }

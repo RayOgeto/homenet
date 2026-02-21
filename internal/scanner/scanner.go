@@ -6,6 +6,7 @@ import (
 	"homenet/internal/models"
 	"net"
 	"os"
+	"os/exec"
 	"runtime"
 	"strings"
 	"sync"
@@ -97,6 +98,9 @@ func (s *Scanner) scan() {
 	// After scanning IPs, check local ARP table for MACs
 	s.updateARP()
 	
+	// Check for mDNS services to get friendly names
+	s.scanMDNS()
+	
 	// Save state
 	s.SaveDevices()
 
@@ -123,7 +127,10 @@ func (s *Scanner) SaveDevices() {
 		return
 	}
 
-	// 2. Rename temp file to actual file (Atomic on POSIX)
+	// 2. Rename temp file to actual file
+	if runtime.GOOS == "windows" {
+		_ = os.Remove(s.devicesFile)
+	}
 	err = os.Rename(tmpFile, s.devicesFile)
 	if err != nil {
 		fmt.Printf("Error renaming file: %v\n", err)
@@ -225,13 +232,16 @@ func (s *Scanner) GetDevices() []models.Device {
 	return list
 }
 
-// updateARP reads /proc/net/arp to enrich devices with MAC addresses.
-// This works on Linux.
+// updateARP enriches devices with MAC addresses from local ARP table.
 func (s *Scanner) updateARP() {
-	if runtime.GOOS != "linux" {
-		return
+	if runtime.GOOS == "linux" {
+		s.updateARPLinux()
+	} else if runtime.GOOS == "windows" {
+		s.updateARPWindows()
 	}
+}
 
+func (s *Scanner) updateARPLinux() {
 	content, err := os.ReadFile("/proc/net/arp")
 	if err != nil {
 		return 
@@ -246,6 +256,43 @@ func (s *Scanner) updateARP() {
 		ip := fields[0]
 		mac := fields[3]
 		
+		if strings.HasPrefix(ip, s.Subnet) {
+			s.mu.Lock()
+			if dev, ok := s.Devices[ip]; ok {
+				dev.MAC = mac
+				dev.Manufacturer = getManuf(mac)
+			} else {
+				// Passive discovery via ARP
+				s.Devices[ip] = &models.Device{
+					IP:           ip,
+					MAC:          mac,
+					Manufacturer: getManuf(mac),
+					LastSeen:     time.Now(),
+					IsOnline:     true,
+				}
+			}
+			s.mu.Unlock()
+		}
+	}
+}
+
+func (s *Scanner) updateARPWindows() {
+	out, err := exec.Command("arp", "-a").Output()
+	if err != nil {
+		return
+	}
+
+	lines := strings.Split(string(out), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		fields := strings.Fields(line)
+		if len(fields) < 3 {
+			continue
+		}
+		
+		ip := fields[0]
+		mac := strings.ReplaceAll(fields[1], "-", ":") // Normalize to colons
+
 		if strings.HasPrefix(ip, s.Subnet) {
 			s.mu.Lock()
 			if dev, ok := s.Devices[ip]; ok {
