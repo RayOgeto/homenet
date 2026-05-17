@@ -1,0 +1,29 @@
+{
+  "subnet": "",
+  "upstream_dns": "1.1.1.1:53",
+  "dns_mode": "udp",
+  "doh_provider": "https://cloudflare-dns.com/dns-query",
+  "dns_port": "53",
+  "block_list": [
+    "ads.google.com.",
+    "doubleclick.net.",
+    "analytics.google.com.",
+    "google-analytics.com.",
+    "googlesyndication.com.",
+    "adservice.google.com.",
+    "facebook.com.",
+    "graph.facebook.com.",
+    "creative.ak.fbcdn.net.",
+    "pixel.facebook.com.",
+    "ad.doubleclick.net.",
+    "pagead2.googlesyndication.com.",
+    "tpc.googlesyndication.com.",
+    "www.googleadservices.com.",
+    "partner.googleadservices.com.",
+    "telemetry.microsoft.com.",
+    "vortex.data.microsoft.com.",
+    "settings-win.data.microsoft.com."
+  ],
+  "log_file": "homenet.log",
+  "devices_file": "devices.json"
+}
