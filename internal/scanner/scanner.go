@@ -41,22 +41,56 @@ func NewScanner(subnet string, devicesFile string) *Scanner {
 }
 
 func detectSubnet() string {
-	addrs, err := net.InterfaceAddrs()
+	interfaces, err := net.Interfaces()
 	if err != nil {
 		return "192.168.1" // Fallback
 	}
-	for _, a := range addrs {
-		if ipnet, ok := a.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-			if ipnet.IP.To4() != nil {
-				// Return the first 3 octets: "192.168.100"
-				ip := ipnet.IP.String()
-				parts := strings.Split(ip, ".")
-				if len(parts) == 4 {
-					return strings.Join(parts[:3], ".")
+
+	var fallbackSubnet string
+
+	for _, iface := range interfaces {
+		// Skip down or loopback interfaces
+		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+
+		addrs, err := iface.Addrs()
+		if err != nil {
+			continue
+		}
+
+		for _, a := range addrs {
+			if ipnet, ok := a.(*net.IPNet); ok {
+				ip := ipnet.IP.To4()
+				if ip == nil {
+					continue
+				}
+				
+				ipStr := ip.String()
+				// Skip link-local
+				if strings.HasPrefix(ipStr, "169.254.") {
+					continue
+				}
+
+				parts := strings.Split(ipStr, ".")
+				if len(parts) != 4 {
+					continue
+				}
+				subnet := strings.Join(parts[:3], ".")
+
+				if ip.IsPrivate() {
+					return subnet
+				} else if fallbackSubnet == "" {
+					fallbackSubnet = subnet
 				}
 			}
 		}
 	}
+
+	if fallbackSubnet != "" {
+		return fallbackSubnet
+	}
+
 	return "192.168.1"
 }
 
